@@ -1,0 +1,122 @@
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # module.api.docker_container.api will be created
+  + resource "docker_container" "api" {
+      + attach                                      = false
+      + bridge                                      = (known after apply)
+      + command                                     = (known after apply)
+      + container_logs                              = (known after apply)
+      + container_read_refresh_timeout_milliseconds = 15000
+      + entrypoint                                  = (known after apply)
+      + env                                         = (sensitive value)
+      + exit_code                                   = (known after apply)
+      + hostname                                    = (known after apply)
+      + id                                          = (known after apply)
+      + image                                       = (known after apply)
+      + init                                        = (known after apply)
+      + ipc_mode                                    = (known after apply)
+      + log_driver                                  = (known after apply)
+      + logs                                        = false
+      + memory                                      = 2048
+      + memory_reservation                          = 0
+      + must_run                                    = true
+      + name                                        = "docs-chat-api"
+      + network_data                                = (known after apply)
+      + network_mode                                = "bridge"
+      + read_only                                   = false
+      + remove_volumes                              = true
+      + restart                                     = "unless-stopped"
+      + rm                                          = false
+      + runtime                                     = (known after apply)
+      + security_opts                               = (known after apply)
+      + shm_size                                    = (known after apply)
+      + start                                       = true
+      + stdin_open                                  = false
+      + stop_signal                                 = (known after apply)
+      + stop_timeout                                = (known after apply)
+      + tty                                         = false
+      + wait                                        = false
+      + wait_timeout                                = 60
+
+      + healthcheck {
+          + interval       = "30s"
+          + retries        = 3
+          + start_interval = "0s"
+          + start_period   = "30s"
+          + test           = [
+              + "CMD",
+              + "python",
+              + "-c",
+              + "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+            ]
+          + timeout        = "5s"
+        }
+
+      + labels (known after apply)
+
+      + ports {
+          + external = 8000
+          + internal = 8000
+          + ip       = "0.0.0.0"
+          + protocol = "tcp"
+        }
+
+      + volumes {
+          + container_path = "/app/data"
+          + volume_name    = "docs-chat-api-data"
+            # (2 unchanged attributes hidden)
+        }
+    }
+
+  # module.api.docker_image.api will be created
+  + resource "docker_image" "api" {
+      + id           = (known after apply)
+      + image_id     = (known after apply)
+      + keep_locally = true
+      + name         = "docs-chat-api:latest"
+      + repo_digest  = (known after apply)
+      + triggers     = {
+          + "code_hash" = "4f77ea9a7feca1de7d6223351f77311dc3526602"
+        }
+
+      + build {
+          + additional_contexts = []
+          + cache_from          = []
+          + cache_to            = []
+          + context             = "./.."
+          + dockerfile          = "Dockerfile"
+          + extra_hosts         = []
+          + remove              = true
+          + security_opt        = []
+          + tag                 = []
+            # (13 unchanged attributes hidden)
+        }
+    }
+
+  # module.api.docker_volume.data will be created
+  + resource "docker_volume" "data" {
+      + driver     = (known after apply)
+      + id         = (known after apply)
+      + mountpoint = (known after apply)
+      + name       = "docs-chat-api-data"
+    }
+
+Plan: 3 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + api_url        = "http://localhost:8000"
+  + container_name = "docs-chat-api"
+  + data_volume    = "docs-chat-api-data"
+  + docs_url       = "http://localhost:8000/docs"
+
+─────────────────────────────────────────────────────────────────────────────
+
+Saved the plan to: api.tfplan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "api.tfplan"

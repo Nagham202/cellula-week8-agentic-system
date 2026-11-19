@@ -1,0 +1,6 @@
+      + name                                        = "docs-chat-api-test"
+          + external = 9000
+      + name         = "docs-chat-api-test:latest"
+      + name       = "docs-chat-api-test-data"
+Plan: 3 to add, 0 to change, 0 to destroy.
+  + api_url        = "http://localhost:9000"

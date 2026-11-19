@@ -1,0 +1,17 @@
+# keys are passed at runtime
+.env
+
+.venv/
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+.streamlit/
+logs/
+data/
+eval/
+tests/
+scripts/
+infra/
+*.md
+.DS_Store

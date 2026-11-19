@@ -2,6 +2,7 @@ from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
+from src import cache
 from src.answer.answer_agent import generate_answer
 from src.orchestrator import run_analysis
 
@@ -48,8 +49,17 @@ chat_graph = build_graph()
 
 def ask(question, chat_history=None):
     # the one function the streamlit app calls
+    cache_key = cache.answer_cache_key(question, chat_history)
+    cached = cache.get_answer(cache_key)
+    if cached is not None:
+        return {**cached, "from_cache": True}
+
     state = chat_graph.invoke({"question": question, "chat_history": chat_history or []})
-    return {"answer": state["answer"], "sources": state["sources"]}
+    reply = {"answer": state["answer"], "sources": state["sources"], "analysis": state["analysis"]}
+    # errors and "not found" have no sources, don't cache those
+    if reply["sources"]:
+        cache.save_answer(cache_key, reply)
+    return {**reply, "from_cache": False}
 
 
 # quick test: python -m src.chat_graph  (needs the database, makes a few LLM calls)

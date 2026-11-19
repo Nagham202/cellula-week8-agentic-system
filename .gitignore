@@ -11,3 +11,19 @@ data/qdrant/
 
 # macOS
 .DS_Store
+
+# Answer cache
+data/cache.sqlite3
+
+# Reports
+data/reports/
+
+# Logs
+logs/
+
+# Terraform
+infra/.terraform/
+*.tfstate
+*.tfstate.*
+infra/terraform.tfvars
+infra/*.tfplan

@@ -59,3 +59,11 @@ OPENROUTER_MODELS = {
     "answer": "nvidia/nemotron-3-ultra-550b-a55b:free",
 }
 OLLAMA_MODEL = "llama3.1:8b"
+
+USE_CACHE = True
+CACHE_PATH = "data/cache.sqlite3"
+CACHE_TTL_SECONDS = 24 * 60 * 60
+# bump this after changing a prompt
+CACHE_VERSION = 2
+
+MAX_UPLOAD_MB = 20

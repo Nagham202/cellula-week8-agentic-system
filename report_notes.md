@@ -415,3 +415,189 @@ Rewrites cached in eval/results/rewrites.json (28 LLM calls once, 0 fallbacks).
 - Shared LLM helper: written by me (src/llm.py), roles "rewriter", "analyst", "answer".
 - Embedding model: proposed BAAI/bge-small-en-v1.5 (English). -> confirm (Arabic would need
   multilingual-e5-large and a different BM25 language).
+
+
+---
+
+# Week 8: FastAPI Backend + Terraform (Nagham)
+
+Team split: me = FastAPI deployment + Terraform. Teammate 2 = voice (speech to text) + image OCR.
+Teammate 3 = Report Generator Agent (PDF).
+
+## Summary
+- FastAPI app (api/): 7 endpoints (/health, /upload, /sources, DELETE /sources/{name}, /ask, /ask-voice,
+  /report), Pydantic models for every request/response, clear 400/404/422/503/500 errors, logging to
+  logs/api.log, models and Qdrant loaded once at startup. Teammates' functions are fakes behind one import.
+- Answer cache (SQLite): repeated question 0.002 s instead of about 2.5 s, 0 LLM calls.
+- 24 API tests (TestClient, fakes, temporary database): all pass in about 1.3 s. Whole suite: 101 pass.
+- Dockerfile: 1.52 GB image, healthy container, keys passed at run time (never in the image), data on a volume.
+- Terraform (infra/, Docker provider, small module): fmt, init, validate and plan all pass
+  ("Plan: 3 to add, 0 to change, 0 to destroy"); outputs saved in infra/results/.
+- Docs: api/README.md (endpoints, contracts, Docker, tests), infra/README.md (design, variables, outputs,
+  how to init/validate/plan, secrets), plus a short section in the main README.
+
+## Decisions
+
+### Endpoints (proposed to the team)
+GET /health, POST /upload, GET /sources, DELETE /sources/{name}, POST /ask, POST /ask-voice, POST /report.
+- Images go through /upload too (no separate /ocr): the client doesn't need to know how a file is read.
+- /ask calls chat_graph.ask() (Orchestrator + Answer Agent + cache), the same function Streamlit uses.
+
+### Function contracts for teammates (fakes in api/fakes.py until theirs are ready)
+- transcribe(audio_path) -> str
+- extract_text(image_path) -> str
+- generate_report(question, answer, analysis, sources, style) -> pdf_path
+
+### Qdrant lock: one program at a time
+Local Qdrant allows only one program to open data/qdrant. Chosen: run the API and Streamlit one at a time
+for now; later Streamlit will call the API, so only the API opens Qdrant. uvicorn runs with 1 worker.
+Rejected: Qdrant server in Docker (removes the lock but more setup and changes the Week 7 store code).
+
+### Uploads
+Saved to a temporary folder with the real file name (it becomes the citation), ingested, then deleted
+(chunks live in Qdrant). Allowed: PDF, DOCX, TXT (images later with OCR). Limit: 20 MB (config.MAX_UPLOAD_MB).
+
+### Pydantic models (api/schemas.py)
+Every response has a model, so /docs shows teammates the exact format, and bad input gets an automatic 422.
+
+### Extras added before the API work
+- Answer cache (src/cache.py, SQLite file data/cache.sqlite3): same question -> saved answer, 0 tokens.
+  Key = normalized question + settings; cleared when documents change; follow-ups in a conversation
+  are not cached; only answers with sources are saved; 24 h expiry. Same idea as Week 6 (Redis), but
+  SQLite needs no server.
+- Streamlit app restyled to match the Week 6 app, in dark mode.
+
+## Results
+
+### Step 1-2: /health, /upload, /sources, DELETE /sources/{name}
+- /health -> {"status": "ok"}
+- /upload "Lina Haddad.pdf" -> 200, 10 chunks; /sources -> 7 files, 221 chunks
+- /upload x.exe -> 400 "Unsupported file type"; empty .txt -> 400 "No text could be found"
+- DELETE unknown name -> 404
+
+### Step 3: /ask (real LLM calls)
+- {"question": "What does error E31 mean?"} -> 200, answer cites kito_manual.pdf page 3, from_cache false
+- Follow-up "How do I fix it?" with 2 history messages -> 200, 3 steps (stop, clean, restart),
+  sources kito_manual.pdf pages 2 and 3, from_cache false (follow-ups are never cached)
+- Empty question -> 422; role "robot" -> 422 (checked by Pydantic before any LLM call, 0 tokens)
+
+### Chat history: the client sends it with every /ask (stateless API)
+Same format ask() and Streamlit already use. Rejected: server-side sessions (needs storage, expiry,
+a "new conversation" endpoint, and history is lost on restart).
+
+### Step 4: fakes + /ask-voice + /report + images in /upload (with fakes, temporary database)
+- Image upload (.png) -> fake OCR text -> ingest_text() -> same cleaning/chunking/Qdrant -> 200, 1 chunk
+- /ask-voice (.m4a) -> transcript + answer + sources + analysis; .txt -> 400 with the allowed types
+- /report -> 200, application/pdf, downloads as report.pdf; empty answer -> 422
+- Full test suite: 79 passed
+- Against the real running server (real LLM, fake voice/OCR/report): image upload -> 1 chunk, deleted;
+  /ask-voice -> transcript + real answer (kito_manual.pdf p3) in 2.2 s; the same question on /ask right
+  after -> from_cache true (the voice question had filled the cache); /report -> 1-page PDF download
+  with the question, sources and style; empty answer -> 422; .png to /ask-voice -> 400
+
+### Report input: /ask returns the analysis too
+ask() now returns analysis (also saved in the cache; CACHE_VERSION 1 -> 2 so old entries without it are
+not reused). The client sends question + answer + analysis + sources to /report: no extra LLM calls, and
+the report shows the same answer the user saw. Rejected: /report runs the question again (tokens twice,
+answer may differ).
+
+### Report style: optional plain-text instructions
+style: str | None, e.g. "formal, navy headings, large title". Teammate 3's agent turns the words into fonts,
+sizes and colors, so the agent really controls the design. Rejected: a fixed dict of design fields.
+
+### Fakes (api/fakes.py)
+Same names and inputs/outputs as agreed. main.py imports them in one line; swapping to the real code
+changes only that line. Fake report = a small reportlab PDF in data/reports/ (git-ignored).
+
+### Step 5: errors, loading models once, logging
+Found: when every LLM provider fails, the Answer Agent returns "Sorry, the answer could not be generated"
+with status 200 (looks like success), and the Analyst doesn't catch errors (plain 500, no message).
+Fixed in the API layer only (teammates' code unchanged):
+- answer_or_503(): wraps ask() for /ask and /ask-voice. An exception, or the Answer Agent's error message
+  -> 503 "The AI service is not available right now". Logged with the full traceback.
+- Global exception handler: any unplanned error -> 500 JSON {"detail": "... see logs/api.log"} + traceback in
+  the log, instead of a plain-text crash.
+- Startup (FastAPI lifespan): loads the dense + BM25 embedding models and the reranker, and opens Qdrant.
+  The first question no longer waits for models, and a locked database stops the server at startup with
+  a clear message instead of failing on the first request.
+- Logging: Python logging to the terminal and logs/api.log (git-ignored): uploads, deletes, rejected files,
+  each answer with time, from_cache and number of sources, transcripts, reports, errors.
+Live results (running server): startup "Loading the models and opening Qdrant..." -> "Ready" in 0.2 s
+(models already downloaded); new question 2.45 s with 3 Groq calls in the log (rewriter, analyst, answer);
+same question again 0.002 s from the cache; .py upload -> 400 (logged as "Rejected"); unknown delete -> 404;
+a second server started while the first held data/qdrant -> "Application startup failed" with the clear
+Qdrant lock message, and the first server kept working.
+Simulated results: LLM exception -> 503; Answer Agent error message -> 503; /ask-voice with LLM down -> 503;
+bug in /sources -> 500 JSON + traceback in the log; normal /ask -> 200.
+
+### Step 6: automatic API tests (tests/test_api.py)
+24 tests with FastAPI's TestClient, one or more per endpoint, success and error cases:
+/health; /upload (txt, image via OCR fake, wrong type 400, too big 400, empty 400, ../../ path kept to the
+name); /sources (empty, counts, delete, unknown 404); /ask (reply, history passed as dicts, empty question
+422 with no ask() call, bad role 422, LLM exception 503, Answer Agent error message 503); /ask-voice
+(transcript + answer, non-audio 400, silence 400 with no ask() call); /report (PDF bytes, every field
+reaches the report agent, empty answer 422); unexpected bug 500 JSON.
+How: ask() replaced by a fake (no LLM calls, no tokens), temporary Qdrant folder per test (monkeypatch),
+reports written to a temporary folder. Result: 24 passed in 1.33 s, even while the real server held the
+data/qdrant lock (proves the tests never open the real database). Whole suite: 101 passed, 2 failed only
+because of that lock (Week 7 tests that use the real database).
+
+### Step 7: Dockerfile (Docker Desktop 4.99, engine 29.9.3, linux/aarch64)
+- Base python:3.12-slim; requirements installed before copying code (layer cache: code changes rebuild in
+  seconds); only config.py, src/, api/ copied (.dockerignore excludes .env, .venv, data, tests, ...).
+- Embedding, BM25 and reranker models downloaded during the build (FASTEMBED_CACHE_PATH=/app/models), so the
+  container starts without internet access to the model hub.
+- Secrets: not in the image. Passed at start with --env-file .env (config.py already reads os.getenv).
+  Checked: no .env file and no GROQ_API_KEY inside the image.
+- Data: /app/data is a VOLUME; the project's data/ folder is mounted with -v, so Qdrant (223 chunks), the cache
+  and reports survive container restarts. Still one program at a time (stop local uvicorn/Streamlit first).
+- HEALTHCHECK calls /health every 30 s; uvicorn --host 0.0.0.0 (reachable from outside) --workers 1 (Qdrant lock).
+Results: first build 1 min 55 s; image 1.52 GB. Container status "healthy" after 18 s; startup log
+"Loading the models..." -> "Ready" in 0.27 s; /sources -> 7 files, 223 chunks (mounted data);
+/ask "How long does the Kito robot take to charge?" -> "about 90 minutes [kito_manual.pdf, page 1]" in 4.4 s.
+Rejected: Colima (free, terminal only, extra Terraform setting); skipping Docker (no running evidence, and the
+Terraform Docker provider needs a running engine even for plan).
+
+### Step 8-9: Terraform (v1.17.2, provider kreuzwerker/docker v3.9.0)
+Provider choice: Docker provider (describes the image, volume and container on the local Docker engine).
+Rejected: AWS provider with fake credentials (more concepts: networks, IAM, instance types; can't be run to check).
+Structure: infra/providers.tf, variables.tf, main.tf, outputs.tf, terraform.tfvars.example and a small module
+infra/modules/app/ (main.tf, variables.tf, outputs.tf, versions.tf) = everything one copy of the API needs.
+Resources: docker_image (built from the project Dockerfile, rebuilt when Dockerfile/requirements/code change,
+using a hash of the files as a trigger), docker_volume (data: Qdrant, cache, reports), docker_container (port,
+memory limit, restart unless-stopped, keys as env, volume at /app/data, healthcheck on /health).
+Variables: docker_socket, app_name, api_port (validated 1024-65535), memory_mb, groq_api_key and
+openrouter_api_key (sensitive). Outputs: api_url, docs_url, container_name, data_volume.
+Secrets: real values in infra/terraform.tfvars (git-ignored, like .env); state files and saved plans git-ignored
+(they can hold secrets); .terraform.lock.hcl committed (pins the provider version for the team).
+Results (saved in infra/results/):
+- terraform fmt -recursive -check: exit 0 (all files formatted)
+- terraform init: installed kreuzwerker/docker v3.9.0, lock file created
+- terraform validate: "Success! The configuration is valid."
+- terraform plan (placeholder key): "Plan: 3 to add, 0 to change, 0 to destroy"; env shown as (sensitive value);
+  the placeholder key appears 0 times in the saved output; outputs api_url http://localhost:8000, docs_url,
+  container_name docs-chat-api, data_volume docs-chat-api-data
+- Variables: -var api_port=9000 -var app_name=docs-chat-api-test -> every name, the port and api_url change
+- Validation: -var api_port=80 -> "api_port must be between 1024 and 65535."
+terraform apply was not run (not required; nothing is created).
+
+### Known limitation
+/ask-voice takes only the audio (no chat history yet), so voice follow-ups like "how do I fix it?"
+are treated as new questions.
+
+## Challenges
+- Qdrant local mode lock: the API failed to open data/qdrant while the Streamlit app was running.
+- /docs test returned 422 "json_invalid": the request box had two JSON objects and a trailing comma.
+  The error points to the exact character (loc ["body", 42]); FastAPI rejects it before our code runs.
+- logger.exception() inside the global exception handler logged "NoneType: None" (no traceback), because it
+  only finds the error inside an except block. Fixed with logger.error(..., exc_info=error).
+- brew install --cask docker-desktop stopped at a sudo step (needs the Mac password in a real terminal);
+  Homebrew rolled back cleanly and kept the download, so the second run (by me in the terminal) was quick.
+- Homebrew could not install Terraform (outdated macOS Command Line Tools). Installed the official
+  darwin_arm64 binary from releases.hashicorp.com into ~/.local/bin after checking its SHA256 checksum.
+- Docker Desktop's socket is ~/.docker/run/docker.sock, not /var/run/docker.sock -> made it a variable.
+- terraform init failed: "registry.terraform.io does not have a provider named hashicorp/docker". The module
+  didn't declare its provider source, so Terraform guessed hashicorp/docker. Fixed with
+  modules/app/versions.tf (source = kreuzwerker/docker).
+- Since the API opens Qdrant at startup, the two Week 7 tests that use the real data/qdrant fail while the
+  server runs (lock). They pass with the server stopped; the API tests use a temporary database.
