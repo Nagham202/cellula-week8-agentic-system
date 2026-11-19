@@ -546,6 +546,29 @@ Results: first build 1 min 55 s; image 1.52 GB. Container status "healthy" after
 Rejected: Colima (free, terminal only, extra Terraform setting); skipping Docker (no running evidence, and the
 Terraform Docker provider needs a running engine even for plan).
 
+### Step 8-9: Terraform (v1.17.2, provider kreuzwerker/docker v3.9.0)
+Provider choice: Docker provider (describes the image, volume and container on the local Docker engine).
+Rejected: AWS provider with fake credentials (more concepts: networks, IAM, instance types; can't be run to check).
+Structure: infra/providers.tf, variables.tf, main.tf, outputs.tf, terraform.tfvars.example and a small module
+infra/modules/app/ (main.tf, variables.tf, outputs.tf, versions.tf) = everything one copy of the API needs.
+Resources: docker_image (built from the project Dockerfile, rebuilt when Dockerfile/requirements/code change,
+using a hash of the files as a trigger), docker_volume (data: Qdrant, cache, reports), docker_container (port,
+memory limit, restart unless-stopped, keys as env, volume at /app/data, healthcheck on /health).
+Variables: docker_socket, app_name, api_port (validated 1024-65535), memory_mb, groq_api_key and
+openrouter_api_key (sensitive). Outputs: api_url, docs_url, container_name, data_volume.
+Secrets: real values in infra/terraform.tfvars (git-ignored, like .env); state files and saved plans git-ignored
+(they can hold secrets); .terraform.lock.hcl committed (pins the provider version for the team).
+Results (saved in infra/results/):
+- terraform fmt -recursive -check: exit 0 (all files formatted)
+- terraform init: installed kreuzwerker/docker v3.9.0, lock file created
+- terraform validate: "Success! The configuration is valid."
+- terraform plan (placeholder key): "Plan: 3 to add, 0 to change, 0 to destroy"; env shown as (sensitive value);
+  the placeholder key appears 0 times in the saved output; outputs api_url http://localhost:8000, docs_url,
+  container_name docs-chat-api, data_volume docs-chat-api-data
+- Variables: -var api_port=9000 -var app_name=docs-chat-api-test -> every name, the port and api_url change
+- Validation: -var api_port=80 -> "api_port must be between 1024 and 65535."
+terraform apply was not run (not required; nothing is created).
+
 ### Known limitation
 /ask-voice takes only the audio (no chat history yet), so voice follow-ups like "how do I fix it?"
 are treated as new questions.
@@ -558,5 +581,11 @@ are treated as new questions.
   only finds the error inside an except block. Fixed with logger.error(..., exc_info=error).
 - brew install --cask docker-desktop stopped at a sudo step (needs the Mac password in a real terminal);
   Homebrew rolled back cleanly and kept the download, so the second run (by me in the terminal) was quick.
+- Homebrew could not install Terraform (outdated macOS Command Line Tools). Installed the official
+  darwin_arm64 binary from releases.hashicorp.com into ~/.local/bin after checking its SHA256 checksum.
+- Docker Desktop's socket is ~/.docker/run/docker.sock, not /var/run/docker.sock -> made it a variable.
+- terraform init failed: "registry.terraform.io does not have a provider named hashicorp/docker". The module
+  didn't declare its provider source, so Terraform guessed hashicorp/docker. Fixed with
+  modules/app/versions.tf (source = kreuzwerker/docker).
 - Since the API opens Qdrant at startup, the two Week 7 tests that use the real data/qdrant fail while the
   server runs (lock). They pass with the server stopped; the API tests use a temporary database.
