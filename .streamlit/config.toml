@@ -1,0 +1,10 @@
+# same look as the week 6 app, in dark mode
+[theme]
+base = "dark"
+
+# hide streamlit's developer menu and the deploy button
+[client]
+toolbarMode = "viewer"
+
+[browser]
+gatherUsageStats = false

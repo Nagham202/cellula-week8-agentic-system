@@ -11,3 +11,6 @@ data/qdrant/
 
 # macOS
 .DS_Store
+
+# Answer cache (each person has their own)
+data/cache.sqlite3

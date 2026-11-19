@@ -4,6 +4,7 @@ import uuid
 from qdrant_client import QdrantClient, models
 
 import config
+from src import cache
 from src.pipeline.embeddings import embed_sparse_texts, embed_texts
 
 # local mode locks the folder, so the whole program shares one client
@@ -74,6 +75,8 @@ def add_chunks(chunks):
         must_not=[models.FieldCondition(key="chunk_id", match=models.MatchAny(any=new_chunk_ids))],
     )
     qdrant.delete(collection_name=config.COLLECTION_NAME, points_selector=models.FilterSelector(filter=leftovers))
+    # the documents changed, so saved answers may be out of date
+    cache.clear()
     return len(points)
 
 
@@ -83,6 +86,7 @@ def delete_source(source):
         collection_name=config.COLLECTION_NAME,
         points_selector=models.FilterSelector(filter=models.Filter(must=[match("source", source)])),
     )
+    cache.clear()
 
 
 def list_sources():

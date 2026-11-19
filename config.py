@@ -59,3 +59,10 @@ OPENROUTER_MODELS = {
     "answer": "nvidia/nemotron-3-ultra-550b-a55b:free",
 }
 OLLAMA_MODEL = "llama3.1:8b"
+
+# answers to questions asked before are saved here and reused (0 tokens)
+USE_CACHE = True
+CACHE_PATH = "data/cache.sqlite3"
+CACHE_TTL_SECONDS = 24 * 60 * 60
+# change this number after editing a prompt, so old answers are not reused
+CACHE_VERSION = 1

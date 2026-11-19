@@ -13,3 +13,6 @@ langchain-ollama
 reportlab  # only for scripts/make_messy_pdf.py (test files)
 langgraph
 streamlit
+fastapi
+uvicorn[standard]
+python-multipart  # FastAPI needs it to receive uploaded files

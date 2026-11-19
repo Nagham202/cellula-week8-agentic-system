@@ -18,7 +18,7 @@ def test_graph_gives_answer_and_sources(monkeypatch):
                         lambda question, analysis, evidence: {"answer": "Clean the sensor.",
                                                               "sources": ["kito_manual.pdf, page 3"]})
     reply = chat_graph.ask("How do I fix it?")
-    assert reply == {"answer": "Clean the sensor.", "sources": ["kito_manual.pdf, page 3"]}
+    assert reply == {"answer": "Clean the sensor.", "sources": ["kito_manual.pdf, page 3"], "from_cache": False}
 
 
 def test_answer_agent_gets_the_full_question(monkeypatch):
