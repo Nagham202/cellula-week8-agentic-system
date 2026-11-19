@@ -1,8 +1,10 @@
-# Cellula Week 7 – Agentic RAG: Chat with Your Documents
+# Cellula Week 8 – Agentic System: Chat with Your Documents
 
 ## Overview
 
-This project is a document-based **Agentic Retrieval-Augmented Generation (RAG) system** developed as part of the Cellula Technologies NLP Internship – Week 7.
+This project is a document-based **Agentic Retrieval-Augmented Generation (RAG) system** developed as part of the Cellula Technologies NLP Internship.
+
+**Week 8** turns the Week 7 agentic RAG system into a complete, deployable system: a FastAPI REST API, voice questions, image upload with OCR, a PDF Report Generator Agent, an answer cache, a Docker image, and a Terraform configuration for deployment.
 
 The application allows users to upload PDF, DOCX, and TXT documents, ask questions about their contents, and receive answers grounded in the uploaded documents with accurate source citations.
 
@@ -12,11 +14,25 @@ The system uses three specialized AI agents working together:
 2. **Analyst Agent:** Analyzes retrieved information, performs calculations, compares documents, extracts tables, and requests additional evidence when needed.
 3. **Answer Agent:** Generates clear, structured, evidence-based answers with document citations.
 
-An Orchestrator coordinates the agents, while LangGraph manages the workflow and Streamlit provides the user interface.
+An Orchestrator coordinates the agents, LangGraph manages the workflow, and the system is used through a FastAPI REST API or the Streamlit app.
 
 ---
 
 ## Features
+
+### Week 8
+
+- FastAPI REST API with interactive documentation at `/docs`.
+- Voice questions: speech is converted to text, then answered (`/ask-voice`).
+- Image upload with OCR: text found in images goes into the knowledge base (`/upload`).
+- Report Generator Agent: professional PDF reports whose design the agent controls (`/report`).
+- Answer cache: repeated questions are answered instantly with no LLM calls.
+- Clear error responses (400, 404, 422, 503) and request logging.
+- Docker image with a health check; API keys passed at run time.
+- Terraform configuration (Docker provider) checked with `init`, `validate` and `plan`.
+- Streamlit interface restyled in dark mode.
+
+### Week 7
 
 - Upload PDF, DOCX, and TXT documents.
 - Automatic document loading, cleaning, and chunking.
@@ -106,6 +122,25 @@ PDF / DOCX / TXT
 
 The Orchestrator coordinates the process and ensures that the Answer Agent receives the Analyst's findings and the collected evidence.
 
+### 3. Week 8: API and Deployment
+
+```text
+   Clients: Streamlit app · /docs page · any program
+                        |
+                        v
+               FastAPI (api/main.py)
+   /upload  /sources  /ask  /ask-voice  /report  /health
+      |                 |        |          |
+      |                 |   Speech to text  |
+      v                 v        |          v
+ Pipeline + OCR    Answer cache <+    Report Generator
+      |                 |                 Agent (PDF)
+      v                 v
+   Qdrant  <---  Orchestrator -> Retriever -> Analyst -> Answer
+
+   Packaging: Dockerfile -> image    Deployment: Terraform (infra/)
+```
+
 ---
 
 ## Technology Stack
@@ -121,6 +156,11 @@ The Orchestrator coordinates the process and ensures that the Answer Agent recei
 | Qdrant | Vector database |
 | FastEmbed | Embedding generation and reranking |
 | Streamlit | Web application interface |
+| FastAPI + Uvicorn | REST API and server |
+| Pydantic | Request and response validation |
+| SQLite | Answer cache |
+| Docker | Container image |
+| Terraform | Infrastructure as Code |
 | PyPDF | PDF text extraction |
 | Python-docx | DOCX document processing |
 | Pytest | Testing |
@@ -130,7 +170,23 @@ The Orchestrator coordinates the process and ensures that the Answer Agent recei
 ## Project Structure
 
 ```text
-cellula-week7-agentic-rag/
+cellula-week8-agentic-system/
+│
+├── api/
+│   ├── main.py
+│   ├── schemas.py
+│   ├── fakes.py
+│   └── README.md
+│
+├── infra/
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   ├── providers.tf
+│   ├── terraform.tfvars.example
+│   ├── modules/app/
+│   ├── results/
+│   └── README.md
 │
 ├── data/
 │   ├── samples/
@@ -177,6 +233,7 @@ cellula-week7-agentic-rag/
 │   │   ├── search.py
 │   │   └── selector.py
 │   │
+│   ├── cache.py
 │   ├── chat_graph.py
 │   ├── llm.py
 │   └── orchestrator.py
@@ -185,6 +242,8 @@ cellula-week7-agentic-rag/
 │
 ├── app.py
 ├── config.py
+├── Dockerfile
+├── .dockerignore
 ├── requirements.txt
 ├── .env.example
 ├── .gitignore
@@ -198,13 +257,13 @@ cellula-week7-agentic-rag/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Nagham202/cellula-week7-agentic-rag.git
+git clone https://github.com/Nagham202/cellula-week8-agentic-system.git
 ```
 
 Navigate to the project directory:
 
 ```bash
-cd cellula-week7-agentic-rag
+cd cellula-week8-agentic-system
 ```
 
 ### 2. Create a Virtual Environment
@@ -579,6 +638,9 @@ Important settings include:
 | `LLM_PROVIDER` | `groq` | Primary LLM provider |
 | `USE_FALLBACKS` | True | Enable LLM fallbacks |
 | `LLM_TEMPERATURE` | 0 | LLM temperature |
+| `USE_CACHE` | True | Enable the answer cache |
+| `CACHE_TTL_SECONDS` | 86400 | How long cached answers are kept |
+| `MAX_UPLOAD_MB` | 20 | Largest file the API accepts |
 
 If the embedding model is changed, the local Qdrant database should be rebuilt because vectors from different embedding models are not interchangeable.
 
@@ -600,6 +662,16 @@ If the embedding model is changed, the local Qdrant database should be rebuilt b
 
 This project was developed collaboratively by a team of three members.
 
+### Week 8
+
+| Team Member | Responsibilities |
+|---|---|
+| **Nagham** | FastAPI deployment (all endpoints), answer cache, Dockerfile, and Terraform |
+| **Sara** | Voice queries (speech to text) and image upload with OCR |
+| **Heba** | Report Generator Agent (PDF reports) |
+
+### Week 7
+
 | Team Member | Responsibilities |
 |---|---|
 | **Nagham** | Document processing pipeline and Retriever Agent |
@@ -616,11 +688,16 @@ This project was developed collaboratively by a team of three members.
 - Improve retrieval and answer evaluation.
 - Add additional analytical tools.
 - Continue improving the multi-agent workflow.
+- Send chat history with voice questions, so spoken follow-ups work.
+- Let the Streamlit app call the REST API instead of opening Qdrant directly.
+- Move to a Qdrant server so several API containers can run at once.
 
 ---
 
 ## Repository
 
-**GitHub:** https://github.com/Nagham202/cellula-week7-agentic-rag
+**GitHub:** https://github.com/Nagham202/cellula-week8-agentic-system
 
-**Developed as part of the Cellula Technologies NLP Internship – Week 7.**
+**Previous version (Week 7):** https://github.com/Nagham202/cellula-week7-agentic-rag
+
+**Developed as part of the Cellula Technologies NLP Internship – Week 8.**
