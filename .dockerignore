@@ -1,7 +1,6 @@
-# never put secrets in the image: the keys are passed with --env-file when the container starts
+# keys are passed at runtime
 .env
 
-# not needed inside the container
 .venv/
 .git/
 __pycache__/

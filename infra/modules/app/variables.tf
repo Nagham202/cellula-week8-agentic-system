@@ -1,5 +1,3 @@
-# the module's inputs; the root main.tf fills them in
-
 variable "name" {
   description = "Name for the container, the image and the data volume"
   type        = string

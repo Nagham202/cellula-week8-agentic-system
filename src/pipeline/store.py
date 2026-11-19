@@ -75,7 +75,7 @@ def add_chunks(chunks):
         must_not=[models.FieldCondition(key="chunk_id", match=models.MatchAny(any=new_chunk_ids))],
     )
     qdrant.delete(collection_name=config.COLLECTION_NAME, points_selector=models.FilterSelector(filter=leftovers))
-    # the documents changed, so saved answers may be out of date
+    # cached answers may be out of date now
     cache.clear()
     return len(points)
 

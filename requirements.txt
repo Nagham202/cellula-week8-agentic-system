@@ -15,4 +15,4 @@ langgraph
 streamlit
 fastapi
 uvicorn[standard]
-python-multipart  # FastAPI needs it to receive uploaded files
+python-multipart

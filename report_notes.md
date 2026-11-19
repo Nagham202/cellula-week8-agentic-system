@@ -424,6 +424,18 @@ Rewrites cached in eval/results/rewrites.json (28 LLM calls once, 0 fallbacks).
 Team split: me = FastAPI deployment + Terraform. Teammate 2 = voice (speech to text) + image OCR.
 Teammate 3 = Report Generator Agent (PDF).
 
+## Summary
+- FastAPI app (api/): 7 endpoints (/health, /upload, /sources, DELETE /sources/{name}, /ask, /ask-voice,
+  /report), Pydantic models for every request/response, clear 400/404/422/503/500 errors, logging to
+  logs/api.log, models and Qdrant loaded once at startup. Teammates' functions are fakes behind one import.
+- Answer cache (SQLite): repeated question 0.002 s instead of about 2.5 s, 0 LLM calls.
+- 24 API tests (TestClient, fakes, temporary database): all pass in about 1.3 s. Whole suite: 101 pass.
+- Dockerfile: 1.52 GB image, healthy container, keys passed at run time (never in the image), data on a volume.
+- Terraform (infra/, Docker provider, small module): fmt, init, validate and plan all pass
+  ("Plan: 3 to add, 0 to change, 0 to destroy"); outputs saved in infra/results/.
+- Docs: api/README.md (endpoints, contracts, Docker, tests), infra/README.md (design, variables, outputs,
+  how to init/validate/plan, secrets), plus a short section in the main README.
+
 ## Decisions
 
 ### Endpoints (proposed to the team)

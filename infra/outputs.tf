@@ -1,5 +1,3 @@
-# printed after terraform apply (and shown as "known after apply" in a plan)
-
 output "api_url" {
   description = "Base URL of the API"
   value       = module.api.api_url

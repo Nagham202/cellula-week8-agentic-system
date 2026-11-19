@@ -16,7 +16,6 @@ def ingest_file(path):
 
 
 def ingest_text(text, source_name, source_type="image"):
-    # for text that doesn't come from a file we can load, like OCR text from an image
     document = Document(page_content=text, metadata={"source": source_name, "type": source_type, "page": None})
     chunks = chunk_documents(clean_documents([document]))
     if not chunks:

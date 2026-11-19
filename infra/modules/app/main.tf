@@ -1,6 +1,3 @@
-# everything one copy of the API needs: the image, a volume for its data, and the container
-
-# built from our Dockerfile; rebuilt when the Dockerfile, requirements or code change
 resource "docker_image" "api" {
   name         = "${var.name}:latest"
   keep_locally = true
@@ -9,6 +6,7 @@ resource "docker_image" "api" {
     context = var.build_context
   }
 
+  # rebuild when the Dockerfile, requirements or code change
   triggers = {
     code_hash = sha1(join("", [
       for file in sort(concat(
@@ -20,7 +18,6 @@ resource "docker_image" "api" {
   }
 }
 
-# Qdrant, the answer cache and the reports live here, so they survive when the container is replaced
 resource "docker_volume" "data" {
   name = "${var.name}-data"
 }
@@ -36,7 +33,6 @@ resource "docker_container" "api" {
     external = var.api_port
   }
 
-  # the keys are given when the container starts, they are never inside the image
   env = [
     "GROQ_API_KEY=${var.groq_api_key}",
     "OPENROUTER_API_KEY=${var.openrouter_api_key}",

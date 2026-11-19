@@ -1,5 +1,3 @@
-# tests for every endpoint: no LLM calls (ask() is replaced by a fake) and a temporary Qdrant folder
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -16,11 +14,10 @@ FAKE_REPLY = {"answer": "E31 means the lidar sensor is blocked [kito_manual.pdf,
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    # a temporary database, so the real data/qdrant is never touched
     monkeypatch.setattr(config, "QDRANT_PATH", str(tmp_path / "qdrant"))
     monkeypatch.setattr(store, "client", None)
     monkeypatch.setattr(fakes, "REPORTS_DIR", tmp_path / "reports")
-    # the real ask() calls three LLMs; this fake answers instantly and remembers what it got
+    # stand-in for ask() so the tests make no LLM calls
     calls = []
 
     def fake_ask(question, chat_history=None):
@@ -37,15 +34,11 @@ def upload(client, filename, content):
     return client.post("/upload", files={"file": (filename, content)})
 
 
-# ---------- /health ----------
-
 def test_health(client):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
-
-# ---------- /upload ----------
 
 def test_upload_text_file_adds_chunks(client):
     response = upload(client, "notes.txt", b"The office opens at 8 am. Parking is behind the building.")
@@ -57,7 +50,6 @@ def test_upload_text_file_adds_chunks(client):
 def test_upload_image_goes_through_ocr(client):
     response = upload(client, "office_sign.png", b"fake image bytes")
     assert response.status_code == 200
-    # the image name is the source, so citations show where the text came from
     assert client.get("/sources").json()["sources"][0]["name"] == "office_sign.png"
 
 
@@ -80,13 +72,10 @@ def test_upload_rejects_empty_file(client):
 
 
 def test_upload_keeps_only_the_file_name(client):
-    # a name like ../../x.txt must not be saved outside the temporary folder
     response = upload(client, "../../outside.txt", b"Some text for the test.")
     assert response.status_code == 200
     assert response.json()["filename"] == "outside.txt"
 
-
-# ---------- /sources ----------
 
 def test_sources_empty_at_start(client):
     assert client.get("/sources").json() == {"sources": [], "total_chunks": 0}
@@ -111,8 +100,6 @@ def test_delete_unknown_source_gives_404(client):
     response = client.delete("/sources/nope.pdf")
     assert response.status_code == 404
 
-
-# ---------- /ask ----------
 
 def test_ask_returns_answer_sources_and_analysis(client):
     response = client.post("/ask", json={"question": "What does error E31 mean?"})
@@ -155,15 +142,12 @@ def test_ask_gives_503_when_the_answer_agent_returns_its_error_message(client, m
     assert response.status_code == 503
 
 
-# ---------- /ask-voice ----------
-
 def test_ask_voice_returns_transcript_and_answer(client):
     response = client.post("/ask-voice", files={"file": ("question.m4a", b"fake audio")})
     assert response.status_code == 200
     data = response.json()
     assert data["transcript"] == "What does error E31 mean?"
     assert data["answer"] == FAKE_REPLY["answer"]
-    # the transcript is what gets asked
     assert client.ask_calls[0]["question"] == "What does error E31 mean?"
 
 
@@ -178,8 +162,6 @@ def test_ask_voice_with_no_speech_gives_400(client, monkeypatch):
     assert response.status_code == 400
     assert client.ask_calls == []
 
-
-# ---------- /report ----------
 
 def test_report_returns_a_pdf(client):
     body = {"question": "What does error E31 mean?", "answer": FAKE_REPLY["answer"],
@@ -210,8 +192,6 @@ def test_report_rejects_empty_answer(client):
     response = client.post("/report", json={"question": "q", "answer": ""})
     assert response.status_code == 422
 
-
-# ---------- unexpected errors ----------
 
 def test_unexpected_error_gives_500_json(client, monkeypatch):
     def broken_list_sources():

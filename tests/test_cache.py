@@ -6,7 +6,6 @@ HISTORY = [{"role": "user", "content": "What does error E31 mean?"},
 
 
 def count_calls(monkeypatch, reply):
-    # replaces the whole graph, so no LLM is called, and counts how often it runs
     calls = []
 
     class FakeGraph:
@@ -44,7 +43,6 @@ def test_clear_question_in_a_conversation_uses_the_cache(monkeypatch):
 
 
 def test_answers_without_sources_are_not_cached(monkeypatch):
-    # "not found" and error messages could be different next time
     calls = count_calls(monkeypatch, {"answer": "I could not find this in the documents.", "sources": []})
     chat_graph.ask("Who is the CEO of Mars?")
     chat_graph.ask("Who is the CEO of Mars?")

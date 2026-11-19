@@ -1,5 +1,3 @@
-# run with: python -m streamlit run app.py
-
 import tempfile
 import time
 from pathlib import Path
@@ -50,7 +48,7 @@ def show_sidebar():
 
 def show_answer(message):
     answer, sources = message["content"], message["sources"]
-    # the answer agent adds a "Sources:" list at the end, it is shown in its own section instead
+    # sources go in the expander below, so drop the list the answer agent adds
     if sources and "\n\nSources:" in answer:
         answer = answer.rsplit("\n\nSources:", 1)[0]
     st.markdown(answer)

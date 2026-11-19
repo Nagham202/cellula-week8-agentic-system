@@ -1,6 +1,3 @@
-# run from the project folder with: uvicorn api.main:app --reload
-# only one program can open data/qdrant, so stop the Streamlit app first
-
 import logging
 import tempfile
 import time
@@ -11,7 +8,7 @@ from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 
 import config
-# fakes for now; when my teammates' code is ready, only this line changes
+# fakes until the real voice/OCR/report code is ready
 from api.fakes import extract_text, generate_report, transcribe
 from api.schemas import (AskRequest, AskResponse, AskVoiceResponse, Message, ReportRequest, SourceInfo,
                          SourceList, UploadResult)
@@ -27,7 +24,6 @@ DOCUMENT_EXTENSIONS = {".pdf", ".docx", ".txt"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a", ".webm", ".ogg"}
 
-# every message goes to the terminal and to logs/api.log
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s",
                     handlers=[logging.StreamHandler(), logging.FileHandler("logs/api.log")])
@@ -38,13 +34,12 @@ LLM_DOWN_MESSAGE = "The AI service is not available right now. Please try again 
 
 @asynccontextmanager
 async def lifespan(app):
-    # runs once when the server starts, so the first question doesn't wait for the models to load
     logger.info("Loading the models and opening Qdrant...")
     get_dense_model()
     get_sparse_model()
     if config.USE_RERANKER:
         get_reranker(config.RERANKER_MODEL)
-    # opening Qdrant now means a locked database stops the server with a clear message
+    # open qdrant now so a locked db fails at startup, not on the first request
     get_client()
     logger.info("Ready")
     yield
@@ -60,21 +55,19 @@ app = FastAPI(
 
 @app.exception_handler(Exception)
 def unexpected_error(request: Request, error: Exception):
-    # any error we didn't plan for: log the full details, give the client a short JSON message
     logger.error(f"Unexpected error on {request.method} {request.url.path}", exc_info=error)
     return JSONResponse(status_code=500, content={"detail": "Something went wrong on the server. "
                                                             "The details are in logs/api.log."})
 
 
 def answer_or_503(question, history=None):
-    # the agents need an LLM; if every provider is down, tell the client with a 503 instead of crashing
     start = time.perf_counter()
     try:
         reply = ask(question, history)
     except Exception:
         logger.exception(f"ask() failed for {question[:80]!r}")
         raise HTTPException(status_code=503, detail=LLM_DOWN_MESSAGE)
-    # the Answer Agent catches its own LLM errors and returns this message instead
+    # the answer agent returns this message instead of raising when the LLM fails
     if reply["answer"] == ERROR_MESSAGE:
         logger.error(f"The Answer Agent could not reach an LLM for {question[:80]!r}")
         raise HTTPException(status_code=503, detail=LLM_DOWN_MESSAGE)
@@ -84,8 +77,7 @@ def answer_or_503(question, history=None):
 
 
 def read_upload(file, allowed_extensions):
-    # checks the type and size, and returns the safe file name and the file's bytes
-    # only the name, so something like ../../x.pdf can't be saved outside the temp folder
+    # drop any folders from the name, e.g. ../../x.pdf
     filename = Path(file.filename).name
     extension = Path(filename).suffix.lower()
     if extension not in allowed_extensions:
@@ -102,7 +94,6 @@ def read_upload(file, allowed_extensions):
 
 @app.get("/health")
 def health():
-    # a quick "I'm alive" check, used later by Docker and Terraform
     return {"status": "ok"}
 
 
@@ -110,7 +101,7 @@ def health():
 def upload(file: UploadFile):
     filename, content = read_upload(file, DOCUMENT_EXTENSIONS | IMAGE_EXTENSIONS)
 
-    # the file keeps its real name, because the name becomes the source in the citations
+    # keep the real file name, it's used as the source in citations
     with tempfile.TemporaryDirectory() as folder:
         path = Path(folder) / filename
         path.write_bytes(content)

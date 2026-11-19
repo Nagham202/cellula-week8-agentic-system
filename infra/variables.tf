@@ -1,5 +1,3 @@
-# settings that can change without editing the code; real values go in terraform.tfvars (git-ignored)
-
 variable "docker_socket" {
   description = "Path to the Docker engine socket. Docker Desktop on macOS: ~/.docker/run/docker.sock, Linux: /var/run/docker.sock"
   type        = string

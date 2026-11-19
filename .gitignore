@@ -12,16 +12,16 @@ data/qdrant/
 # macOS
 .DS_Store
 
-# Answer cache (each person has their own)
+# Answer cache
 data/cache.sqlite3
 
-# PDF reports made by the report agent
+# Reports
 data/reports/
 
-# API logs
+# Logs
 logs/
 
-# Terraform: downloaded providers, state (can hold secrets), real variable values, saved plans
+# Terraform
 infra/.terraform/
 *.tfstate
 *.tfstate.*

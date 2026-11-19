@@ -49,16 +49,14 @@ chat_graph = build_graph()
 
 def ask(question, chat_history=None):
     # the one function the streamlit app calls
-    # a question asked before is answered from the cache, without any LLM calls
     cache_key = cache.answer_cache_key(question, chat_history)
     cached = cache.get_answer(cache_key)
     if cached is not None:
         return {**cached, "from_cache": True}
 
     state = chat_graph.invoke({"question": question, "chat_history": chat_history or []})
-    # the analysis is returned too, the report agent needs it
     reply = {"answer": state["answer"], "sources": state["sources"], "analysis": state["analysis"]}
-    # only real answers with sources are saved, not errors or "not found"
+    # errors and "not found" have no sources, don't cache those
     if reply["sources"]:
         cache.save_answer(cache_key, reply)
     return {**reply, "from_cache": False}

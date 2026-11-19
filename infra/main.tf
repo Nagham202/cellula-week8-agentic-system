@@ -1,5 +1,3 @@
-# the whole deployment: one copy of the API, built from the Dockerfile in the project folder
-
 module "api" {
   source = "./modules/app"
 

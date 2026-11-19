@@ -7,10 +7,8 @@ from pathlib import Path
 
 import config
 
-# questions with these words usually point back to the conversation ("how do I fix it?")
 FOLLOW_UP_WORDS = {"it", "its", "they", "them", "their", "this", "that", "these", "those",
                    "he", "she", "his", "her", "him", "one", "ones", "same", "other", "above", "previous"}
-# "and the price?", "what about page 3?" also lean on the question before
 FOLLOW_UP_STARTS = ("and ", "also ", "what about ", "how about ", "then ")
 
 
@@ -23,7 +21,6 @@ def connect():
     return connection
 
 
-# "  What does error E31 MEAN? " and "what does error e31 mean" are the same question
 def normalize_question(question):
     text = " ".join(question.lower().split())
     return text.rstrip("?!. ")
@@ -35,23 +32,21 @@ def is_follow_up(question):
     return text.startswith(FOLLOW_UP_STARTS) or any(word in FOLLOW_UP_WORDS for word in words)
 
 
-# anything that changes how answers are made goes into the key, so a change never returns an old answer
+# if any of these change, old answers shouldn't be reused
 def answer_settings():
     return [config.CACHE_VERSION, config.LLM_PROVIDER, config.GROQ_MODELS, config.OPENROUTER_MODELS,
             config.OLLAMA_MODEL, config.TOP_K, config.USE_RERANKER, config.USE_QUERY_REWRITER,
             config.MAX_EVIDENCE, config.DENSE_MODEL, config.CHUNK_SIZE, config.CHUNK_OVERLAP]
 
 
-# None means don't use the cache for this question
 def answer_cache_key(question, chat_history=None):
-    # in a conversation the meaning can depend on earlier messages, so only clear questions are cached
+    # follow-ups depend on the earlier messages, so they're not cached
     if chat_history and is_follow_up(question):
         return None
     text = json.dumps([normalize_question(question), answer_settings()], ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-# the cache only makes things faster, if it fails the app keeps working without it
 def get_answer(key):
     if not config.USE_CACHE or key is None:
         return None
@@ -76,7 +71,6 @@ def save_answer(key, reply):
         pass
 
 
-# called whenever documents are added or deleted, old answers may be wrong after that
 def clear():
     try:
         with connect() as connection:
@@ -93,8 +87,7 @@ def count():
         return 0
 
 
-# python -m src.cache          shows how many answers are saved
-# python -m src.cache clear    deletes them
+# python -m src.cache [clear]
 if __name__ == "__main__":
     import sys
 

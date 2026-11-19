@@ -483,8 +483,25 @@ The response contains:
 
 - `answer`: Final generated answer.
 - `sources`: Document sources used in the answer.
+- `analysis`: The Analyst Agent's analysis (used by the report agent).
+- `from_cache`: `true` when the answer came from the answer cache (no LLM calls).
 
 Conversation history can be passed to support follow-up questions.
+
+---
+
+## REST API, Docker and Terraform (Week 8)
+
+The system is also available as a FastAPI REST API, with endpoints to upload documents, list and delete sources,
+ask by text or voice, and download PDF reports. It is packaged with a Dockerfile, and its infrastructure is
+described with Terraform.
+
+```bash
+uvicorn api.main:app --reload        # then open http://127.0.0.1:8000/docs
+```
+
+- API endpoints, Docker and tests: [api/README.md](api/README.md)
+- Terraform design, variables, and how to init/validate/plan: [infra/README.md](infra/README.md)
 
 ---
 
