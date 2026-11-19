@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from langchain_core.documents import Document
+
 from src.pipeline.chunking import chunk_documents
 from src.pipeline.cleaning import clean_documents
 from src.pipeline.loaders import SourceError, load_file
@@ -10,6 +12,15 @@ def ingest_file(path):
     chunks = chunk_documents(clean_documents(load_file(path)))
     if not chunks:
         raise SourceError(f"No text could be found in {Path(path).name}. It may be a scanned PDF (only images).")
+    return add_chunks(chunks)
+
+
+def ingest_text(text, source_name, source_type="image"):
+    # for text that doesn't come from a file we can load, like OCR text from an image
+    document = Document(page_content=text, metadata={"source": source_name, "type": source_type, "page": None})
+    chunks = chunk_documents(clean_documents([document]))
+    if not chunks:
+        raise SourceError(f"No text could be found in {source_name}.")
     return add_chunks(chunks)
 
 

@@ -14,3 +14,9 @@ data/qdrant/
 
 # Answer cache (each person has their own)
 data/cache.sqlite3
+
+# PDF reports made by the report agent
+data/reports/
+
+# API logs
+logs/

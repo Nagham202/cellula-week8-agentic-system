@@ -415,3 +415,130 @@ Rewrites cached in eval/results/rewrites.json (28 LLM calls once, 0 fallbacks).
 - Shared LLM helper: written by me (src/llm.py), roles "rewriter", "analyst", "answer".
 - Embedding model: proposed BAAI/bge-small-en-v1.5 (English). -> confirm (Arabic would need
   multilingual-e5-large and a different BM25 language).
+
+
+---
+
+# Week 8: FastAPI Backend + Terraform (Nagham)
+
+Team split: me = FastAPI deployment + Terraform. Teammate 2 = voice (speech to text) + image OCR.
+Teammate 3 = Report Generator Agent (PDF).
+
+## Decisions
+
+### Endpoints (proposed to the team)
+GET /health, POST /upload, GET /sources, DELETE /sources/{name}, POST /ask, POST /ask-voice, POST /report.
+- Images go through /upload too (no separate /ocr): the client doesn't need to know how a file is read.
+- /ask calls chat_graph.ask() (Orchestrator + Answer Agent + cache), the same function Streamlit uses.
+
+### Function contracts for teammates (fakes in api/fakes.py until theirs are ready)
+- transcribe(audio_path) -> str
+- extract_text(image_path) -> str
+- generate_report(question, answer, analysis, sources, style) -> pdf_path
+
+### Qdrant lock: one program at a time
+Local Qdrant allows only one program to open data/qdrant. Chosen: run the API and Streamlit one at a time
+for now; later Streamlit will call the API, so only the API opens Qdrant. uvicorn runs with 1 worker.
+Rejected: Qdrant server in Docker (removes the lock but more setup and changes the Week 7 store code).
+
+### Uploads
+Saved to a temporary folder with the real file name (it becomes the citation), ingested, then deleted
+(chunks live in Qdrant). Allowed: PDF, DOCX, TXT (images later with OCR). Limit: 20 MB (config.MAX_UPLOAD_MB).
+
+### Pydantic models (api/schemas.py)
+Every response has a model, so /docs shows teammates the exact format, and bad input gets an automatic 422.
+
+### Extras added before the API work
+- Answer cache (src/cache.py, SQLite file data/cache.sqlite3): same question -> saved answer, 0 tokens.
+  Key = normalized question + settings; cleared when documents change; follow-ups in a conversation
+  are not cached; only answers with sources are saved; 24 h expiry. Same idea as Week 6 (Redis), but
+  SQLite needs no server.
+- Streamlit app restyled to match the Week 6 app, in dark mode.
+
+## Results
+
+### Step 1-2: /health, /upload, /sources, DELETE /sources/{name}
+- /health -> {"status": "ok"}
+- /upload "Lina Haddad.pdf" -> 200, 10 chunks; /sources -> 7 files, 221 chunks
+- /upload x.exe -> 400 "Unsupported file type"; empty .txt -> 400 "No text could be found"
+- DELETE unknown name -> 404
+
+### Step 3: /ask (real LLM calls)
+- {"question": "What does error E31 mean?"} -> 200, answer cites kito_manual.pdf page 3, from_cache false
+- Follow-up "How do I fix it?" with 2 history messages -> 200, 3 steps (stop, clean, restart),
+  sources kito_manual.pdf pages 2 and 3, from_cache false (follow-ups are never cached)
+- Empty question -> 422; role "robot" -> 422 (checked by Pydantic before any LLM call, 0 tokens)
+
+### Chat history: the client sends it with every /ask (stateless API)
+Same format ask() and Streamlit already use. Rejected: server-side sessions (needs storage, expiry,
+a "new conversation" endpoint, and history is lost on restart).
+
+### Step 4: fakes + /ask-voice + /report + images in /upload (with fakes, temporary database)
+- Image upload (.png) -> fake OCR text -> ingest_text() -> same cleaning/chunking/Qdrant -> 200, 1 chunk
+- /ask-voice (.m4a) -> transcript + answer + sources + analysis; .txt -> 400 with the allowed types
+- /report -> 200, application/pdf, downloads as report.pdf; empty answer -> 422
+- Full test suite: 79 passed
+- Against the real running server (real LLM, fake voice/OCR/report): image upload -> 1 chunk, deleted;
+  /ask-voice -> transcript + real answer (kito_manual.pdf p3) in 2.2 s; the same question on /ask right
+  after -> from_cache true (the voice question had filled the cache); /report -> 1-page PDF download
+  with the question, sources and style; empty answer -> 422; .png to /ask-voice -> 400
+
+### Report input: /ask returns the analysis too
+ask() now returns analysis (also saved in the cache; CACHE_VERSION 1 -> 2 so old entries without it are
+not reused). The client sends question + answer + analysis + sources to /report: no extra LLM calls, and
+the report shows the same answer the user saw. Rejected: /report runs the question again (tokens twice,
+answer may differ).
+
+### Report style: optional plain-text instructions
+style: str | None, e.g. "formal, navy headings, large title". Teammate 3's agent turns the words into fonts,
+sizes and colors, so the agent really controls the design. Rejected: a fixed dict of design fields.
+
+### Fakes (api/fakes.py)
+Same names and inputs/outputs as agreed. main.py imports them in one line; swapping to the real code
+changes only that line. Fake report = a small reportlab PDF in data/reports/ (git-ignored).
+
+### Step 5: errors, loading models once, logging
+Found: when every LLM provider fails, the Answer Agent returns "Sorry, the answer could not be generated"
+with status 200 (looks like success), and the Analyst doesn't catch errors (plain 500, no message).
+Fixed in the API layer only (teammates' code unchanged):
+- answer_or_503(): wraps ask() for /ask and /ask-voice. An exception, or the Answer Agent's error message
+  -> 503 "The AI service is not available right now". Logged with the full traceback.
+- Global exception handler: any unplanned error -> 500 JSON {"detail": "... see logs/api.log"} + traceback in
+  the log, instead of a plain-text crash.
+- Startup (FastAPI lifespan): loads the dense + BM25 embedding models and the reranker, and opens Qdrant.
+  The first question no longer waits for models, and a locked database stops the server at startup with
+  a clear message instead of failing on the first request.
+- Logging: Python logging to the terminal and logs/api.log (git-ignored): uploads, deletes, rejected files,
+  each answer with time, from_cache and number of sources, transcripts, reports, errors.
+Live results (running server): startup "Loading the models and opening Qdrant..." -> "Ready" in 0.2 s
+(models already downloaded); new question 2.45 s with 3 Groq calls in the log (rewriter, analyst, answer);
+same question again 0.002 s from the cache; .py upload -> 400 (logged as "Rejected"); unknown delete -> 404;
+a second server started while the first held data/qdrant -> "Application startup failed" with the clear
+Qdrant lock message, and the first server kept working.
+Simulated results: LLM exception -> 503; Answer Agent error message -> 503; /ask-voice with LLM down -> 503;
+bug in /sources -> 500 JSON + traceback in the log; normal /ask -> 200.
+
+### Step 6: automatic API tests (tests/test_api.py)
+24 tests with FastAPI's TestClient, one or more per endpoint, success and error cases:
+/health; /upload (txt, image via OCR fake, wrong type 400, too big 400, empty 400, ../../ path kept to the
+name); /sources (empty, counts, delete, unknown 404); /ask (reply, history passed as dicts, empty question
+422 with no ask() call, bad role 422, LLM exception 503, Answer Agent error message 503); /ask-voice
+(transcript + answer, non-audio 400, silence 400 with no ask() call); /report (PDF bytes, every field
+reaches the report agent, empty answer 422); unexpected bug 500 JSON.
+How: ask() replaced by a fake (no LLM calls, no tokens), temporary Qdrant folder per test (monkeypatch),
+reports written to a temporary folder. Result: 24 passed in 1.33 s, even while the real server held the
+data/qdrant lock (proves the tests never open the real database). Whole suite: 101 passed, 2 failed only
+because of that lock (Week 7 tests that use the real database).
+
+### Known limitation
+/ask-voice takes only the audio (no chat history yet), so voice follow-ups like "how do I fix it?"
+are treated as new questions.
+
+## Challenges
+- Qdrant local mode lock: the API failed to open data/qdrant while the Streamlit app was running.
+- /docs test returned 422 "json_invalid": the request box had two JSON objects and a trailing comma.
+  The error points to the exact character (loc ["body", 42]); FastAPI rejects it before our code runs.
+- logger.exception() inside the global exception handler logged "NoneType: None" (no traceback), because it
+  only finds the error inside an except block. Fixed with logger.error(..., exc_info=error).
+- Since the API opens Qdrant at startup, the two Week 7 tests that use the real data/qdrant fail while the
+  server runs (lock). They pass with the server stopped; the API tests use a temporary database.

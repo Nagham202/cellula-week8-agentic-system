@@ -56,7 +56,8 @@ def ask(question, chat_history=None):
         return {**cached, "from_cache": True}
 
     state = chat_graph.invoke({"question": question, "chat_history": chat_history or []})
-    reply = {"answer": state["answer"], "sources": state["sources"]}
+    # the analysis is returned too, the report agent needs it
+    reply = {"answer": state["answer"], "sources": state["sources"], "analysis": state["analysis"]}
     # only real answers with sources are saved, not errors or "not found"
     if reply["sources"]:
         cache.save_answer(cache_key, reply)

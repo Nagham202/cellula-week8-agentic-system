@@ -12,7 +12,7 @@ def count_calls(monkeypatch, reply):
     class FakeGraph:
         def invoke(self, state):
             calls.append(state["question"])
-            return {"answer": reply["answer"], "sources": reply["sources"]}
+            return {"answer": reply["answer"], "sources": reply["sources"], "analysis": "some analysis"}
 
     monkeypatch.setattr(chat_graph, "chat_graph", FakeGraph())
     return calls
@@ -24,7 +24,8 @@ def test_same_question_is_answered_from_the_cache(monkeypatch):
     second = chat_graph.ask("  what does ERROR e31 mean ")
     assert len(calls) == 1
     assert first["from_cache"] is False
-    assert second == {"answer": "Clean the sensor.", "sources": ["kito_manual.pdf, page 3"], "from_cache": True}
+    assert second == {"answer": "Clean the sensor.", "sources": ["kito_manual.pdf, page 3"],
+                      "analysis": "some analysis", "from_cache": True}
 
 
 def test_follow_up_in_a_conversation_is_not_cached(monkeypatch):

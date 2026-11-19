@@ -65,4 +65,7 @@ USE_CACHE = True
 CACHE_PATH = "data/cache.sqlite3"
 CACHE_TTL_SECONDS = 24 * 60 * 60
 # change this number after editing a prompt, so old answers are not reused
-CACHE_VERSION = 1
+CACHE_VERSION = 2
+
+# the biggest file the API accepts
+MAX_UPLOAD_MB = 20
