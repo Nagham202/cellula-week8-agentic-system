@@ -530,6 +530,22 @@ reports written to a temporary folder. Result: 24 passed in 1.33 s, even while t
 data/qdrant lock (proves the tests never open the real database). Whole suite: 101 passed, 2 failed only
 because of that lock (Week 7 tests that use the real database).
 
+### Step 7: Dockerfile (Docker Desktop 4.99, engine 29.9.3, linux/aarch64)
+- Base python:3.12-slim; requirements installed before copying code (layer cache: code changes rebuild in
+  seconds); only config.py, src/, api/ copied (.dockerignore excludes .env, .venv, data, tests, ...).
+- Embedding, BM25 and reranker models downloaded during the build (FASTEMBED_CACHE_PATH=/app/models), so the
+  container starts without internet access to the model hub.
+- Secrets: not in the image. Passed at start with --env-file .env (config.py already reads os.getenv).
+  Checked: no .env file and no GROQ_API_KEY inside the image.
+- Data: /app/data is a VOLUME; the project's data/ folder is mounted with -v, so Qdrant (223 chunks), the cache
+  and reports survive container restarts. Still one program at a time (stop local uvicorn/Streamlit first).
+- HEALTHCHECK calls /health every 30 s; uvicorn --host 0.0.0.0 (reachable from outside) --workers 1 (Qdrant lock).
+Results: first build 1 min 55 s; image 1.52 GB. Container status "healthy" after 18 s; startup log
+"Loading the models..." -> "Ready" in 0.27 s; /sources -> 7 files, 223 chunks (mounted data);
+/ask "How long does the Kito robot take to charge?" -> "about 90 minutes [kito_manual.pdf, page 1]" in 4.4 s.
+Rejected: Colima (free, terminal only, extra Terraform setting); skipping Docker (no running evidence, and the
+Terraform Docker provider needs a running engine even for plan).
+
 ### Known limitation
 /ask-voice takes only the audio (no chat history yet), so voice follow-ups like "how do I fix it?"
 are treated as new questions.
@@ -540,5 +556,7 @@ are treated as new questions.
   The error points to the exact character (loc ["body", 42]); FastAPI rejects it before our code runs.
 - logger.exception() inside the global exception handler logged "NoneType: None" (no traceback), because it
   only finds the error inside an except block. Fixed with logger.error(..., exc_info=error).
+- brew install --cask docker-desktop stopped at a sudo step (needs the Mac password in a real terminal);
+  Homebrew rolled back cleanly and kept the download, so the second run (by me in the terminal) was quick.
 - Since the API opens Qdrant at startup, the two Week 7 tests that use the real data/qdrant fail while the
   server runs (lock). They pass with the server stopped; the API tests use a temporary database.

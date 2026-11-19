@@ -1,0 +1,18 @@
+# never put secrets in the image: the keys are passed with --env-file when the container starts
+.env
+
+# not needed inside the container
+.venv/
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+.streamlit/
+logs/
+data/
+eval/
+tests/
+scripts/
+infra/
+*.md
+.DS_Store
