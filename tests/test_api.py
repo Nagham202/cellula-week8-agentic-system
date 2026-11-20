@@ -5,6 +5,7 @@ import config
 from api import fakes, main
 from src.answer.answer_agent import ERROR_MESSAGE
 from src.pipeline import store
+from src.report import report_agent
 
 FAKE_REPLY = {"answer": "E31 means the lidar sensor is blocked [kito_manual.pdf, page 3].",
               "sources": ["kito_manual.pdf, page 3"],
@@ -17,6 +18,10 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "QDRANT_PATH", str(tmp_path / "qdrant"))
     monkeypatch.setattr(store, "client", None)
     monkeypatch.setattr(fakes, "REPORTS_DIR", tmp_path / "reports")
+    # the real report agent, with its LLM step replaced so the tests make no LLM calls
+    monkeypatch.setattr(report_agent, "REPORTS_DIR", tmp_path / "reports")
+    monkeypatch.setattr(report_agent, "design_report",
+                        lambda question, answer, style=None: dict(report_agent.DEFAULT_DESIGN, title="Test report"))
     # stand-in for ask() so the tests make no LLM calls
     calls = []
 
