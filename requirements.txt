@@ -10,7 +10,9 @@ langchain
 langchain-groq
 langchain-openai  # OpenRouter (OpenAI-style API)
 langchain-ollama
-reportlab  # only for scripts/make_messy_pdf.py (test files)
+reportlab  # pdf reports (src/report) and scripts/make_messy_pdf.py
+arabic-reshaper  # arabic letters in pdf reports
+python-bidi  # right-to-left lines in pdf reports
 langgraph
 streamlit
 fastapi

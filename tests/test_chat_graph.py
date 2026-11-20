@@ -1,3 +1,4 @@
+import config
 from src import chat_graph
 
 FAKE_EVIDENCE = [{"source": "kito_manual.pdf", "page": 3, "text": "Error E31: lidar sensor blocked.",
@@ -35,3 +36,16 @@ def test_answer_agent_gets_the_full_question(monkeypatch):
     chat_graph.ask("How do I fix it?", [{"role": "user", "content": "What does error E31 mean?"}])
     assert received["question"] == "How do I fix error E31 on the Kito robot?"
     assert received["evidence"] == FAKE_EVIDENCE
+
+
+def test_app_sees_every_step(monkeypatch):
+    monkeypatch.setattr(config, "USE_CACHE", False)
+    monkeypatch.setattr(chat_graph, "run_analysis", fake_run_analysis)
+    monkeypatch.setattr(chat_graph, "generate_answer",
+                        lambda question, analysis, evidence: {"answer": "Clean the sensor.",
+                                                              "sources": ["kito_manual.pdf, page 3"]})
+    steps = []
+    reply = chat_graph.ask("How do I fix error E31?", on_step=lambda step, details: steps.append(step))
+    # the same reply as without on_step, and the app was told about each step in order
+    assert steps == ["cache", "analyze", "answer"]
+    assert reply["answer"] == "Clean the sensor." and reply["from_cache"] is False
