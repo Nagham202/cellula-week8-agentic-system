@@ -49,6 +49,7 @@ GROQ_MODELS = {
     "rewriter": "openai/gpt-oss-20b",
     "analyst": "openai/gpt-oss-120b",
     "answer": "openai/gpt-oss-120b",
+    "report": "openai/gpt-oss-20b",
 }
 # gpt-oss's hidden thinking tokens count against the limit, low cuts them
 GROQ_REASONING_EFFORT = "low"
@@ -57,6 +58,7 @@ OPENROUTER_MODELS = {
     "rewriter": "nvidia/nemotron-3.5-lightning:free",
     "analyst": "nvidia/nemotron-3-ultra-550b-a55b:free",
     "answer": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "report": "nvidia/nemotron-3.5-lightning:free",
 }
 OLLAMA_MODEL = "llama3.1:8b"
 

@@ -8,8 +8,8 @@ from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 
 import config
-# fakes until the real voice/OCR/report code is ready
-from api.fakes import extract_text, generate_report, transcribe
+# fakes until the real voice/OCR code is ready
+from api.fakes import extract_text, transcribe
 from api.schemas import (AskRequest, AskResponse, AskVoiceResponse, Message, ReportRequest, SourceInfo,
                          SourceList, UploadResult)
 from src.answer.answer_agent import ERROR_MESSAGE
@@ -18,6 +18,7 @@ from src.pipeline.embeddings import get_dense_model, get_sparse_model
 from src.pipeline.ingest import ingest_file, ingest_text
 from src.pipeline.loaders import SourceError
 from src.pipeline.store import count_chunks, delete_source, get_client, list_sources
+from src.report.report_agent import generate_report
 from src.retriever.reranker import get_reranker
 
 DOCUMENT_EXTENSIONS = {".pdf", ".docx", ".txt"}

@@ -47,14 +47,31 @@ def build_graph():
 chat_graph = build_graph()
 
 
-def ask(question, chat_history=None):
-    # the one function the streamlit app calls
+def tell(on_step, step, details):
+    # on_step is optional: the streamlit app gives a function that shows each step to the user
+    if on_step is not None:
+        on_step(step, details)
+
+
+def ask(question, chat_history=None, on_step=None):
+    # the one function the streamlit app and the api call
     cache_key = cache.answer_cache_key(question, chat_history)
     cached = cache.get_answer(cache_key)
     if cached is not None:
+        tell(on_step, "cache", {"found": True})
         return {**cached, "from_cache": True}
+    tell(on_step, "cache", {"found": False})
 
-    state = chat_graph.invoke({"question": question, "chat_history": chat_history or []})
+    inputs = {"question": question, "chat_history": chat_history or []}
+    if on_step is None:
+        state = chat_graph.invoke(inputs)
+    else:
+        # stream() runs the same graph, but gives what each node returned as soon as it finishes
+        state = {}
+        for update in chat_graph.stream(inputs, stream_mode="updates"):
+            for node, output in update.items():
+                state.update(output)
+                tell(on_step, node, output)
     reply = {"answer": state["answer"], "sources": state["sources"], "analysis": state["analysis"]}
     # errors and "not found" have no sources, don't cache those
     if reply["sources"]:
