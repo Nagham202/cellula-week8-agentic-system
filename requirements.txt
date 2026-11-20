@@ -16,3 +16,8 @@ streamlit
 fastapi
 uvicorn[standard]
 python-multipart
+easyocr
+pytesseract
+Pillow
+streamlit-mic-recorder
+groq
