@@ -7,7 +7,7 @@ The team work (Tasks 5 and 6) is in the main project folders (`src/`, `api/`, `i
 |---|---|---|---|
 | 0 | Kimi K2 architecture analysis (IEEE paper) | [task0_kimi_k2/](task0_kimi_k2/) | Done |
 | 1 | Qwen2.5-72B architecture analysis (IEEE paper) | [task1_qwen25/](task1_qwen25/) | Done |
-| 2 | Qwen3-ASR-1.7B for speech-to-text (IEEE report with experiments) | [task2_qwen3_asr/](task2_qwen3_asr/) | Not started |
+| 2 | Qwen3-ASR-1.7B for speech-to-text (IEEE report with experiments) | [task2_qwen3_asr/](task2_qwen3_asr/) | Done |
 | 3 | Generative Adversarial Networks (IEEE report) | [task3_gans/](task3_gans/) | Not started |
 | 4 | Updated CV | [task4_cv/](task4_cv/) | Not started |
 
@@ -37,3 +37,15 @@ attention, RoPE and long-context extension (YaRN, DCA), the SwiGLU FFN, tokeniza
 | [references.bib](task1_qwen25/references.bib) | BibTeX references, IEEE style |
 
 Built in Overleaf. Main source: the Qwen2.5 technical report (arXiv:2412.15115).
+
+## Task 2: Qwen3-ASR-1.7B for Speech-to-Text
+
+A three-page IEEE report on Qwen3-ASR-1.7B with experiments actually run on an Apple M4 Pro laptop: 72 clips
+(different speakers, 12 accents, Egyptian Arabic, added noise, recordings up to 5 minutes), WER/CER, speed and
+memory, compared with Qwen3-ASR-0.6B and Whisper large-v3-turbo.
+
+| File | What it is |
+|---|---|
+| [Qwen3_ASR_Report.pdf](task2_qwen3_asr/Qwen3_ASR_Report.pdf) | The final report |
+| [README.md](task2_qwen3_asr/README.md) | Results summary, scripts, and how to reproduce the experiments |
+| [results/summary.md](task2_qwen3_asr/results/summary.md) | All measured tables |
