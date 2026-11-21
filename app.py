@@ -1,36 +1,55 @@
 import tempfile
 import time
 from pathlib import Path
-
 import streamlit as st
-
 from src.chat_graph import ask
-from src.pipeline.ingest import ingest_file
+from src.pipeline.ingest import ingest_file, ingest_text
+from src.pipeline.ocr import extract_text
 from src.pipeline.loaders import SourceError
 from src.pipeline.store import count_chunks, delete_source, list_sources
+from streamlit_mic_recorder import mic_recorder
+from src.voice import transcribe_audio
 from src.report.report_agent import generate_report
 
 st.set_page_config(page_title="Chat with your documents", page_icon="📚", layout="wide")
 
-
 def upload_files(files):
-    # each file is saved with its real name, because the name becomes the source in the citations
+
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
         for file in files:
             path = Path(folder) / file.name
             path.write_bytes(file.getvalue())
+
             try:
                 with st.spinner(f"Reading {file.name}..."):
-                    chunk_count = ingest_file(path)
+
+                    extension = path.suffix.lower()
+
+                    if extension in [".png", ".jpg", ".jpeg"]:
+
+                        text = extract_text(path)
+
+                        chunk_count = ingest_text(
+                            text,
+                            file.name,
+                            source_type="image"
+                        )
+
+                    else:
+                        chunk_count = ingest_file(path)
+
                 st.success(f"{file.name}: {chunk_count} chunks")
-            except SourceError as error:
+
+            except (SourceError, ValueError) as error:
                 st.error(f"{file.name}: {error}")
+
 
 
 def show_sidebar():
     st.sidebar.header("Knowledge")
 
-    files = st.sidebar.file_uploader("Upload PDF, DOCX or TXT files", type=["pdf", "docx", "txt"],
+    files = st.sidebar.file_uploader("Upload PDF, DOCX or TXT or Images", 
+                                     type=["pdf", "docx", "txt", "png", "jpg", "jpeg"],
                                      accept_multiple_files=True)
     if files and st.sidebar.button("Add to the knowledge base"):
         upload_files(files)
@@ -154,7 +173,7 @@ def main():
     if not sources:
         st.info("There are no documents yet. Upload a file in the sidebar, then ask a question.")
 
-    # the chat is kept here between reruns, oldest message first
+    # Initialize chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
@@ -169,25 +188,80 @@ def main():
             else:
                 show_answer(message, number)
 
+    # Voice input
+    st.subheader("Ask using your voice")
+
+    audio = mic_recorder(
+        start_prompt="Start recording",
+        stop_prompt="Stop recording",
+        key="voice_recorder"
+    )
+
+    voice_question = None
+
+    if audio:
+        st.audio(audio["bytes"], format="audio/wav")
+
+        if st.button("Transcribe and ask", key="transcribe_audio"):
+            try:
+                with st.spinner("Converting your voice to text..."):
+                    voice_question = transcribe_audio(audio["bytes"])
+
+                st.success("Transcription completed!")
+                st.write("Recognized question:", voice_question)
+
+            except Exception as error:
+                st.error(f"Transcription failed: {error}")
+
+    # Text input
     question = st.chat_input("Ask a question about your documents")
+
+    # Use the voice question if available
+    if voice_question:
+        question = voice_question
+
+    # Process both typed and spoken questions
     if question:
         with st.chat_message("user"):
             st.markdown(question)
+
         with st.chat_message("assistant"):
             start = time.perf_counter()
+
             with st.status("Checking the answer cache...", expanded=True) as status:
-                # the history is passed before the new question is added to it
-                reply = ask(question, st.session_state.messages,
-                            on_step=lambda step, details: show_step(status, step, details))
+                # Pass the history before adding the new question
+                reply = ask(
+                    question,
+                    st.session_state.messages,
+                    on_step=lambda step, details: show_step(status, step, details)
+                )
+
                 seconds = round(time.perf_counter() - start, 2)
-                status.update(label=f"Done in {seconds} s", state="complete", expanded=False)
-            answer = {"role": "assistant", "content": reply["answer"], "sources": reply["sources"],
-                      "analysis": reply.get("analysis", ""), "question": question,
-                      "from_cache": reply["from_cache"], "seconds": seconds}
-            # after the question and the answer are added, this answer will be message number len + 1
+
+                status.update(
+                    label=f"Done in {seconds} s",
+                    state="complete",
+                    expanded=False
+                )
+
+            answer = {
+                "role": "assistant",
+                "content": reply["answer"],
+                "sources": reply["sources"],
+                "analysis": reply.get("analysis", ""),
+                "question": question,
+                "from_cache": reply["from_cache"],
+                "seconds": seconds
+            }
+
+            # Display the answer with its report options
             show_answer(answer, len(st.session_state.messages) + 1)
-        st.session_state.messages.append({"role": "user", "content": question})
+
+        st.session_state.messages.append({
+            "role": "user",
+            "content": question
+        })
         st.session_state.messages.append(answer)
-
-
+        
 main()
+
