@@ -1,6 +1,0 @@
-model=Qwen/Qwen3-ASR-0.6B
-device=mps
-dtype=torch.bfloat16
-load_seconds=138.0
-peak_process_rss_gb=2.10
-mps_driver_allocated_gb=6.34
