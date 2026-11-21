@@ -8,7 +8,7 @@ The team work (Tasks 5 and 6) is in the main project folders (`src/`, `api/`, `i
 | 0 | Kimi K2 architecture analysis (IEEE paper) | [task0_kimi_k2/](task0_kimi_k2/) | Done |
 | 1 | Qwen2.5-72B architecture analysis (IEEE paper) | [task1_qwen25/](task1_qwen25/) | Done |
 | 2 | Qwen3-ASR-1.7B for speech-to-text (IEEE report with experiments) | [task2_qwen3_asr/](task2_qwen3_asr/) | Done |
-| 3 | Generative Adversarial Networks (IEEE report) | [task3_gans/](task3_gans/) | Not started |
+| 3 | Generative Adversarial Networks (IEEE report) | [task3_gans/](task3_gans/) | Done |
 | 4 | Updated CV | [task4_cv/](task4_cv/) | Not started |
 
 ## Task 0: Kimi K2 Architecture Analysis
@@ -49,3 +49,15 @@ memory, compared with Qwen3-ASR-0.6B and Whisper large-v3-turbo.
 | [Qwen3_ASR_Report.pdf](task2_qwen3_asr/Qwen3_ASR_Report.pdf) | The final report |
 | [README.md](task2_qwen3_asr/README.md) | Results summary, scripts, and how to reproduce the experiments |
 | [results/summary.md](task2_qwen3_asr/results/summary.md) | All measured tables |
+
+## Task 3: Generative Adversarial Networks
+
+A six-page IEEE two-column research report on GANs based on four papers (GAN 2014, DCGAN, WGAN, StyleGAN),
+with cGAN and WGAN-GP as extensions: full step-by-step derivations (optimal discriminator, Jensen-Shannon
+divergence, Nash equilibrium, vanishing gradients), training challenges, architectures, and applications.
+
+| File | What it is |
+|---|---|
+| [GANs_Report.pdf](task3_gans/GANs_Report.pdf) | The final report |
+| [main.tex](task3_gans/main.tex) | LaTeX source (IEEEtran conference template, diagrams drawn with TikZ) |
+| [references.bib](task3_gans/references.bib) | BibTeX references, IEEE style |
