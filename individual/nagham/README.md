@@ -9,7 +9,7 @@ The team work (Tasks 5 and 6) is in the main project folders (`src/`, `api/`, `i
 | 1 | Qwen2.5-72B architecture analysis (IEEE paper) | [task1_qwen25/](task1_qwen25/) | Done |
 | 2 | Qwen3-ASR-1.7B for speech-to-text (IEEE report with experiments) | [task2_qwen3_asr/](task2_qwen3_asr/) | Done |
 | 3 | Generative Adversarial Networks (IEEE report) | [task3_gans/](task3_gans/) | Done |
-| 4 | Updated CV | [task4_cv/](task4_cv/) | Not started |
+| 4 | Updated CV | [task4_cv/](task4_cv/) | Done |
 
 ## Task 0: Kimi K2 Architecture Analysis
 
@@ -61,3 +61,13 @@ divergence, Nash equilibrium, vanishing gradients), training challenges, archite
 | [GANs_Report.pdf](task3_gans/GANs_Report.pdf) | The final report |
 | [main.tex](task3_gans/main.tex) | LaTeX source (IEEEtran conference template, diagrams drawn with TikZ) |
 | [references.bib](task3_gans/references.bib) | BibTeX references, IEEE style |
+
+## Task 4: Updated CV
+
+My CV updated with the Cellula internship, its projects, and the new skills, in an ATS-friendly two-page format.
+See [task4_cv/README.md](task4_cv/README.md) for what changed.
+
+| File | What it is |
+|---|---|
+| [Nagham_Taweel_CV.pdf](task4_cv/Nagham_Taweel_CV.pdf) | The updated CV (public copy, without phone number) |
+| [Nagham_Taweel_CV.tex](task4_cv/Nagham_Taweel_CV.tex) | LaTeX source |
