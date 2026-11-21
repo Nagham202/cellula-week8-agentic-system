@@ -1,0 +1,137 @@
+\documentclass[10pt]{article}
+
+% Helvetica-style font with ligatures off, so ATS parsers read "fi" and "fl" as normal letters
+\ifdefined\XeTeXrevision
+  \usepackage{fontspec}
+  \setmainfont{texgyreheros}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold,
+    ItalicFont=*-italic, BoldItalicFont=*-bolditalic, Ligatures={NoCommon,NoRequired}]
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage[scaled]{helvet}
+  \renewcommand{\familydefault}{\sfdefault}
+  \usepackage{microtype}
+  \DisableLigatures{encoding = *, family = *}
+\fi
+\usepackage[a4paper,margin=0.55in,top=0.5in,bottom=0.5in]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+% makes the PDF text copyable and readable by ATS parsers (pdfLaTeX only)
+\ifdefined\pdfgentounicode
+  \input{glyphtounicode}
+  \pdfgentounicode=1
+\fi
+
+\definecolor{heading}{RGB}{31,56,100}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+% no hyphenation, so keywords are never split across lines
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+\sloppy
+\titleformat{\section}{\color{heading}\bfseries\large}{}{0pt}{}[\vspace{-6pt}\rule{\linewidth}{0.6pt}]
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+\setlist[itemize]{leftmargin=14pt,itemsep=1pt,topsep=2pt,parsep=0pt}
+
+\newcommand{\role}[3]{\textbf{#1} \hfill \textbf{#3}\\{\small\itshape #2}\par}
+\newcommand{\project}[2]{\textbf{#1} \textbar\ {\small\itshape #2}\par}
+
+\begin{document}
+\raggedright
+
+\begin{center}
+{\color{heading}\Huge\bfseries NAGHAM TAWEEL}\\[4pt]
+{\small Ramallah, Palestine \textbar\ \href{mailto:naghamatawel@gmail.com}{naghamatawel@gmail.com} \textbar\ \href{https://www.linkedin.com/in/nagham-taweel-890a57274/}{linkedin.com/in/nagham-taweel-890a57274} \textbar\ \href{https://github.com/Nagham202}{github.com/Nagham202}}
+\end{center}
+
+\section{PROFESSIONAL SUMMARY}
+AI/NLP engineer and QA professional with hands-on experience building and testing LLM-powered systems. Completed an 8-week NLP \& AI internship at Cellula Technologies, delivering a project every week: deep learning text classification, retrieval-augmented generation (RAG), multi-agent systems with LangGraph, speech-to-text, and deployment with FastAPI, Docker, and Terraform, plus four IEEE-format research papers on LLM architectures, speech recognition, and GANs. Currently a Product Analyst on an AI recruitment platform, testing LLM-based interview evaluation, voice AI (TTS/STT), and fraud detection, and driving root cause analysis with AI and backend teams. Background in cybersecurity (SOC analysis, penetration testing) and a B.Sc.\ in Computer Science.
+
+\section{TECHNICAL SKILLS}
+\textbf{AI, NLP \& LLMs:} Large language models (LLMs), RAG, multi-agent systems, prompt engineering, LangChain, LangGraph, Hugging Face Transformers, embeddings, hybrid search, reranking, speech-to-text (Whisper, Qwen3-ASR), model quantization, LLM evaluation (WER/CER, pass@k).\\
+\textbf{Machine Learning \& Data Science:} Python, PyTorch, TensorFlow/Keras, scikit-learn, pandas, RNN/LSTM, supervised and unsupervised learning, exploratory data analysis, model evaluation, data visualization.\\
+\textbf{Backend, Deployment \& MLOps:} FastAPI, REST APIs, Pydantic, Docker, Terraform (infrastructure as code), Streamlit, pytest, Git/GitHub.\\
+\textbf{Databases \& Vector Stores:} SQL, SQLite, Redis, Qdrant, Chroma.\\
+\textbf{QA \& Testing:} Manual and automation testing (Selenium), functional, regression, API (Postman), and UAT testing, test case design, defect tracking (Jira), RTM, AI/LLM and voice AI testing.\\
+\textbf{Product Management:} Requirements gathering, PRDs, backlog prioritization, stakeholder management, roadmap planning.\\
+\textbf{ERP \& Cybersecurity:} Odoo (implementation, workflow design, UAT), SOC monitoring, vulnerability assessment, Splunk.\\
+\textbf{Programming Languages:} Python, Java, SQL, JavaScript, PHP, HTML, CSS.\\
+\textbf{Tools:} Jira, Trello, Postman, Git/GitHub, LaTeX/Overleaf, Ollama, Groq API.
+
+\section{PROFESSIONAL EXPERIENCE}
+\role{NLP \& AI Intern -- Cellula Technologies}{8-week internship program}{Sep 2026 -- Nov 2026}
+\begin{itemize}
+\item Built one end-to-end NLP/LLM project per week in Python, from deep learning text classifiers to multi-agent RAG systems, each delivered with code, tests, and a written report on GitHub.
+\item Built the REST API of a team multi-agent RAG system with FastAPI (7 endpoints for document upload, Q\&A with chat history, voice queries, and PDF reports), containerized it with Docker, and defined its infrastructure as code with Terraform.
+\item Added an answer cache that returns repeated questions in about 0.002 s instead of 2.5 s with zero LLM calls, and wrote 24 automated API tests with error handling and logging.
+\item Designed the document processing pipeline and Retriever Agent of a three-agent RAG system (LangGraph, Qdrant hybrid dense and sparse search, query rewriting, reranking).
+\item Installed and evaluated Qwen3-ASR-1.7B against Whisper on 72 audio clips covering 12 accents, Arabic, and noise, measuring WER, CER, speed, and memory; wrote four IEEE research papers on Kimi K2, Qwen2.5-72B, Qwen3-ASR, and GANs.
+\end{itemize}
+
+\role{Product Analyst -- The Functionary}{Remote, Texas, USA}{Sep 2025 -- Present}
+\begin{itemize}
+\item Work across product analysis, product management, and QA on an AI-powered recruitment platform with AI, backend, and product engineers, HR teams, hiring managers, and recruiters.
+\item Test AI interview workflows end-to-end, including LLM-based evaluation and scoring, multi-turn conversations, and voice AI (TTS/STT), through functional, regression, API, and UAT testing; diagnose issues such as speech-role mismatches and inconsistent session states.
+\item Test integrity and fraud-detection features, including resume-inflation detection, behavior analysis, and browser-activity monitoring.
+\item Investigate AI system behavior and edge cases, driving root cause analysis with engineering teams before release.
+\item Contribute to implementing an Odoo-based ERP and integrating it with the recruitment platform, covering requirements, workflow design, and UAT.
+\item Provide technical support: investigate reported issues, resolve bugs with developers, and run product demonstrations.
+\end{itemize}
+
+\role{Technical Support Engineer -- DoubleM}{Ramallah, Palestine}{May 2025 -- Sep 2025}
+\begin{itemize}
+\item Supported municipal water and electricity billing systems for public-sector clients, reproducing and escalating issues with development teams and confirming fixes.
+\item Guided customers through correct system usage, reducing recurring support requests.
+\end{itemize}
+
+\role{Cybersecurity Engineer -- ZeroOne}{Ramallah, Palestine}{Aug 2024 -- Sep 2025}
+\begin{itemize}
+\item Performed penetration testing on web and mobile applications and wrote vulnerability reports with impact, proof of concept, reproduction steps, and remediation guidance.
+\item Monitored and analyzed security events in Tier 1 SOC operations using Splunk for log analysis, threat detection, and incident correlation.
+\end{itemize}
+
+\section{PROJECTS}
+\project{Agentic RAG System with FastAPI Deployment (Cellula, Weeks 7--8, team of 3)}{Python, LangGraph, Qdrant, FastAPI, Docker, Terraform}
+\begin{itemize}
+\item Objective: answer questions about uploaded PDF, DOCX, and TXT documents with cited sources, using Retriever, Analyst, and Answer agents, and serve the system as a production-style API with voice, OCR, and PDF report features.
+\item Contribution: document pipeline and Retriever Agent; FastAPI endpoints, answer cache, tests, Docker image, and Terraform configuration.
+\end{itemize}
+\project{Voice Data Analysis Assistant (Cellula, Week 5)}{Faster-Whisper, LLM, FastAPI, SQLite}
+\begin{itemize}
+\item Lets users ask questions about CSV or Excel data by voice in Arabic or English: speech to text, LLM-generated SQL, read-only SQLite execution, and a chart with a short explanation, protected by layered SQL safety checks.
+\end{itemize}
+\project{Evaluator--Generator Q\&A Platform (Cellula, Week 6)}{LangChain, Chroma, Redis, Streamlit}
+\begin{itemize}
+\item A Generator LLM answers from ingested documents, web pages, and audio, and an Evaluator LLM checks each answer against 7 criteria for up to 4 rounds before it is shown; Redis caches validated answers.
+\end{itemize}
+\project{AI Coding Assistant (Cellula, Week 4)}{Groq LLM, Chroma, Streamlit}
+\begin{itemize}
+\item Explains or generates code with RAG over HumanEval, an LLM relevance judge, conversation memory, and a sandboxed code runner; reached 85\% pass@1 on held-out problems.
+\end{itemize}
+\project{Toxic Content Classifier and Personal RAG Assistant (Cellula, Weeks 1--3)}{TensorFlow/Keras, BLIP, LangChain, Ollama}
+\begin{itemize}
+\item Built RNN and LSTM text classifiers (LSTM 92.7\% accuracy) and a Streamlit app that classifies images through BLIP captions; studied INT8 quantization; built a local RAG assistant with Llama 3.1 8B and Chroma.
+\end{itemize}
+\project{Right Hire AI Interview Platform and Odoo ERP (The Functionary)}{QA \& Product Contributor}
+\begin{itemize}
+\item Wrote test scenarios and ran functional, regression, exploratory, and API testing for AI interviews; proposed integrating Right Hire with Odoo to unify candidate management and recruitment workflows.
+\end{itemize}
+\project{Student Mental Health Analysis (Academic, team project)}{Python, scikit-learn}
+\begin{itemize}
+\item Cleaned and analyzed multiple datasets, ran hypothesis tests and feature engineering, and evaluated predictive models with accuracy, precision, recall, and AUC-ROC.
+\end{itemize}
+
+\section{EDUCATION}
+\role{Bachelor's Degree in Computer Science -- Birzeit University}{Ramallah, Palestine}{2020 -- 2024}
+
+\section{CERTIFICATIONS \& TRAINING}
+\begin{itemize}
+\item \textbf{Data Science \& Machine Learning Certificate} -- IBT Learning with GGateway (Jan 2026 -- Apr 2026): Python for data science, data analysis and visualization, supervised and unsupervised learning, model evaluation.
+\item \textbf{QA Bootcamp} -- AXSOS Academy (2025): manual and automated testing, test case design, API and database testing, Agile/Scrum.
+\item \textbf{Splunk Certifications} -- Power User and Cloud Admin.
+\item \textbf{Mobile App Development Training} -- Experts Turnkey Solutions. \textbf{Ethical Hacking Course} -- ZeroOne.
+\end{itemize}
+
+\end{document}
